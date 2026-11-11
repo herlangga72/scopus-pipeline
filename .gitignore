@@ -1,0 +1,45 @@
+# dependencies (bun install)
+node_modules
+
+# generated research data
+data/raw/
+data/out/
+data/browser-profile/
+data/run.log
+
+# keep real seeds local, only the fake example is tracked
+data/seed/*.csv
+data/seed/*.txt
+!data/seed/example.csv
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store

@@ -1,0 +1,36 @@
+{
+  "name": "scopus-pipeline",
+  "version": "0.1.0",
+  "module": "src/cli.ts",
+  "type": "module",
+  "private": true,
+  "description": "Bun/TypeScript pipeline for Scopus authors, documents, and journals",
+  "bin": {
+    "scopus": "./src/cli.ts"
+  },
+  "scripts": {
+    "scopus": "bun run src/cli.ts",
+    "login": "bun run src/cli.ts login",
+    "doctor": "bun run src/cli.ts doctor",
+    "browser": "bun run src/cli.ts browser",
+    "authors:profiles": "bun run src/cli.ts authors profiles",
+    "authors:documents": "bun run src/cli.ts authors documents",
+    "authors:all": "bun run src/cli.ts authors all",
+    "journals:fetch": "bun run src/cli.ts journals fetch",
+    "format-data": "bun run src/cli.ts format-data",
+    "format-data:authors": "bun run src/cli.ts format-data authors",
+    "format-data:journals": "bun run src/cli.ts format-data journals",
+    "report": "bun run src/cli.ts report affiliations",
+    "check": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "commander": "^15.1.0",
+    "csv-parse": "^7.0.3",
+    "csv-stringify": "^6.9.0"
+  }
+}
