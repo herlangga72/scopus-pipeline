@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises";
 import { config } from "../config.ts";
-import { findChromeBinary, isCdpReachable } from "../cdp/browser.ts";
+import { findChromeBinary, isCdpReachable, resolveBinary } from "../cdp/browser.ts";
 import { attach } from "../cdp/client.ts";
 import { Page } from "../cdp/page.ts";
 import { logger } from "../lib/logger.ts";
@@ -28,7 +28,7 @@ export async function runDoctor(options?: { deep?: boolean }): Promise<Check[]> 
   add("project", "ok", config.root);
 
   const binary = findChromeBinary();
-  const binaryPath = Bun.which(binary);
+  const binaryPath = resolveBinary(binary);
   add("chrome", binaryPath ? "ok" : "fail", binaryPath ?? `${binary} not found, set CHROME_BIN`);
 
   const profileExists = await pathExists(config.chrome.userDataDir);

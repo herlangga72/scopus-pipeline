@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { config } from "../config.ts";
 import { logger, sleep } from "../lib/logger.ts";
 
@@ -22,9 +23,24 @@ export async function isCdpReachable(port = config.cdp.port, host = config.cdp.h
   }
 }
 
+const MAC_APP_BINARIES = [
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+  "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+  "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+];
+
+/** Resolve a binary name or absolute path to an executable path, or null. */
+export function resolveBinary(binary: string | undefined): string | null {
+  if (!binary) return null;
+  if (binary.startsWith("/")) return existsSync(binary) ? binary : null;
+  return Bun.which(binary);
+}
+
 export function findChromeBinary(): string {
   const configured = config.chrome.binary;
-  if (configured && Bun.which(configured)) return configured;
+  const resolved = resolveBinary(configured);
+  if (resolved) return resolved;
   const candidates = [
     "google-chrome",
     "google-chrome-stable",
@@ -33,9 +49,10 @@ export function findChromeBinary(): string {
     "brave-browser",
     "brave",
     "microsoft-edge",
+    ...(process.platform === "darwin" ? MAC_APP_BINARIES : []),
   ];
   for (const candidate of candidates) {
-    const path = Bun.which(candidate);
+    const path = resolveBinary(candidate);
     if (path) return path;
   }
   return configured;
@@ -63,7 +80,7 @@ export async function ensureBrowser(options?: { launch?: boolean; headless?: boo
   }
 
   const binary = findChromeBinary();
-  if (!Bun.which(binary) && !binary.startsWith("/")) {
+  if (!resolveBinary(binary)) {
     throw new Error(`Chrome binary not found: ${binary}. Set CHROME_BIN.`);
   }
 
