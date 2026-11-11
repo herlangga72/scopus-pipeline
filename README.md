@@ -7,6 +7,7 @@ It collects:
 - Author profiles: name, email, ORCID, affiliation, metrics, institution history
 - Author documents: title, DOI, journal, authors, citations, references, abstract
 - Journal metrics: SJR, SNIP, RP, CiteScore, subject rankings, quartiles
+- Citation overview: citations per document per year, with self-citation and book-citation splits
 
 It writes JSON and CSV files. No database is required.
 
@@ -102,11 +103,13 @@ bun run report
 | `bun run scopus --author` | fetch author profiles |
 | `bun run scopus --document` | fetch author document lists |
 | `bun run scopus --journals-quartile` | fetch journal metrics and compute quartiles |
-| `bun run scopus --all` | run all three collection steps |
+| `bun run scopus --citations` | fetch the per-year citation overview |
+| `bun run scopus --all` | run all collection steps |
 | `bun run authors:profiles` | author profiles only |
 | `bun run authors:documents` | author documents only |
 | `bun run authors:all` | author profiles then documents |
 | `bun run journals:fetch` | journal metrics and CiteScore only |
+| `bun run citations:overview` | citation overview per author only |
 
 ### Formatting and reports
 
@@ -115,6 +118,7 @@ bun run report
 | `bun run format-data` | build all JSON and CSV outputs from `data/raw` |
 | `bun run format-data:authors` | author outputs only |
 | `bun run format-data:journals` | journal outputs only |
+| `bun run format-data:citations` | citation overview outputs only |
 | `bun run report` | affiliation markdown, usernames, non-home list, summary JSON |
 
 ### Development
@@ -135,7 +139,8 @@ bun run scopus --author --document --journals-quartile
 | `--author` | fetch author profiles |
 | `--document` | fetch author document lists |
 | `--journals-quartile` | fetch journal metrics and compute quartiles |
-| `--all` | run all three steps |
+| `--citations` | fetch the per-year citation overview |
+| `--all` | run all steps |
 | `--seed <file>` | seed file with author IDs |
 | `-i, --ids <file>` | author or source ID file, depending on the step |
 | `--source-ids <file>` | source ID file for journal steps |
@@ -203,6 +208,7 @@ data/
     author-profiles/           {authorId}.json, GraphQL payload or null
     author-documents/          {authorId}.json, normalized document list
     journals/                  {sourceId}.json, {id, journals, citescore}
+    citation-overview/         {authorId}.json, raw citation overview per variant
   out/                         generated outputs
   legacy/                      optional reference outputs from the Python project
   browser-profile/             managed browser profile
@@ -263,6 +269,52 @@ One row per source, year, and subject code.
 
 One row per journal with a CiteScore percentile and quartile.
 
+### Citation overview
+
+Source: `POST /gateway/citation-overview/authors/citations`, one author per request, paged with `skip`/`amount`.
+Citation years run from `1996` to the current year + 1. Each author is fetched with four filter variants:
+
+| Variant | Scopus filter |
+|---|---|
+| `all` | none |
+| `excl-self-selected` | exclude self citations of the selected author |
+| `excl-self-all` | exclude self citations of all authors |
+| `excl-book` | exclude citations from books |
+
+Derived counts: `self_selected = all - excl_self_selected`, `self_all = all - excl_self_all`, `book = all - excl_book` (clamped at 0).
+
+```bash
+bun run citations:overview --seed data/seed/dosen.csv
+bun run citations:overview --ids ids.txt --year-start 2015 --year-end 2026
+bun run citations:overview --variants all,excl-self-selected
+```
+
+- `citation-overview-long.csv` / `.json`: one row per author, document, variant, and year with citations > 0
+
+  ```text
+  scopus_id, document_id, title, pub_year, source_title, issn, volume, issue,
+  variant, citation_year, citations
+  ```
+
+- `citation-overview-documents.csv` / `.json`: one row per author and document
+
+  ```text
+  scopus_id, document_id, title, pub_year, source_title,
+  total_all, total_excl_self_selected, total_excl_self_all, total_excl_book,
+  total_self_selected, total_self_all, total_book, y1996 ... y2027
+  ```
+
+  `yYYYY` columns hold the `all` variant, with missing years filled with 0.
+
+- `citation-overview-authors.csv` / `.json`: one row per author and citation year
+
+  ```text
+  scopus_id, name, citation_year, all, excl_self_selected, excl_self_all,
+  excl_book, self_selected, self_all, book
+  ```
+
+A cached author counts as done only when it has every requested variant for the same year range.
+
 ### Reports
 
 - `scopus-affiliation-report.md`
@@ -301,6 +353,9 @@ cp .env.example .env
 | `SCOPUS_REQUEST_DELAY_MS` | `400` | delay between author batches |
 | `SCOPUS_JOURNAL_DELAY_MS` | `300` | delay between journal requests |
 | `SCOPUS_DOCUMENT_WAIT_MS` | `120000` | detail enrichment time per author |
+| `SCOPUS_CITATION_YEAR_START` | `1996` | first citation overview year |
+| `SCOPUS_CITATION_YEAR_END` | current year + 1 | last citation overview year |
+| `SCOPUS_CITATION_PAGE_SIZE` | `200` | documents per citation overview request |
 | `DATA_DIR` | `data` | root data directory |
 | `SEED_AUTHOR_IDS` | `seed/example.csv` | default author seed |
 | `HOME_INSTITUTION_PATTERN` | `$^` (matches nothing) | affiliation report matching |
@@ -392,13 +447,14 @@ src/
   cli.ts                 command definitions
   config.ts              env and paths
   cdp/                   browser launch, CDP client, network recorder
-  scopus/                authors, documents, journals, session
+  scopus/                authors, documents, journals, citations, session
   format-data/           raw JSON to JSON and CSV
   commands/              CLI command implementations
   lib/                   CSV, filesystem, logger
   report.ts              affiliation reports
 tests/
   format-data.test.ts    flattening and quartile tests
+  citations.test.ts      citation overview paging and formatting tests
   seed.test.ts           seed parsing tests
 ```
 

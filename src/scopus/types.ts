@@ -138,3 +138,30 @@ export type JournalRecord = {
   journals: ScopusJournalMetrics | null;
   citescore: ScopusCiteScore | ScopusCiteScoreError | null;
 };
+
+export type CitationVariant = "all" | "excl-self-selected" | "excl-self-all" | "excl-book";
+
+export type CitationOverviewAnnual = { startYear: number; endYear: number; referencedByCount: number };
+
+export type CitationOverviewDocument = {
+  id: string;
+  itemTitle?: string[];
+  publicationYear?: number;
+  sourceTitle?: string;
+  issn?: string[];
+  volume?: string;
+  issue?: string;
+  annualReferencedBy?: CitationOverviewAnnual[];
+};
+
+export type CitationOverviewPage = { documents?: CitationOverviewDocument[]; totalCount?: number };
+
+export type CitationOverviewVariantData = { totalCount: number; documents: CitationOverviewDocument[] };
+
+export type CitationOverviewRaw = {
+  authorId: string;
+  fetchedAt: string;
+  yearRangeStart: number;
+  yearRangeEnd: number;
+  variants: Partial<Record<CitationVariant, CitationOverviewVariantData>>;
+};

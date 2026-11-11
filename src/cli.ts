@@ -5,7 +5,8 @@ import { runDoctor } from "./commands/doctor.ts";
 import { runLogin } from "./commands/login.ts";
 import { runAuthorDocuments, runAuthorProfiles, runAuthorsAll } from "./commands/authors.ts";
 import { runJournalsFetch } from "./commands/journals.ts";
-import { runFormatAll, runFormatAuthors, runFormatJournals } from "./commands/format-data.ts";
+import { runFormatAll, runFormatAuthors, runFormatCitations, runFormatJournals } from "./commands/format-data.ts";
+import { runCitationOverview } from "./commands/citations.ts";
 import { runAffiliationReport } from "./report.ts";
 import { browserStatus, closeBrowser, ensureBrowser } from "./cdp/browser.ts";
 
@@ -40,7 +41,8 @@ program
   .option("--author", "fetch author profiles")
   .option("--document", "fetch author document lists")
   .option("--journals-quartile", "fetch journal metrics and compute CiteScore quartiles")
-  .option("--all", "run author, document, and journals-quartile steps")
+  .option("--citations", "fetch per-year citation overview for every author")
+  .option("--all", "run author, document, citations, and journals-quartile steps")
   .option("-i, --ids <file>", "author ID file (txt or CSV with Auth-ID)")
   .option("--seed <file>", "seed file with author IDs, for example --seed data/seed/example.csv")
   .option("--source-ids <file>", "journal source ID file for journals-quartile")
@@ -56,8 +58,9 @@ program
     const wantAuthor = Boolean(options.all || options.author);
     const wantDocument = Boolean(options.all || options.document);
     const wantJournals = Boolean(options.all || options.journalsQuartile);
+    const wantCitations = Boolean(options.all || options.citations);
 
-    if (!wantAuthor && !wantDocument && !wantJournals) {
+    if (!wantAuthor && !wantDocument && !wantJournals && !wantCitations) {
       program.help();
       return;
     }
@@ -76,6 +79,7 @@ program
 
     if (wantAuthor) await runAuthorProfiles(authorOptions);
     if (wantDocument) await runAuthorDocuments(authorOptions);
+    if (wantCitations) await runCitationOverview(authorOptions);
     if (wantJournals) {
       await runJournalsFetch({
         ids: options.sourceIds ?? (!wantAuthor && !wantDocument ? options.seed : undefined),
@@ -146,6 +150,24 @@ applyAuthorOptions(authors.command("all").description("profiles then documents")
   await runAuthorsAll(options);
 });
 
+const citations = program.command("citations").description("per-year citation overview per author");
+citations
+  .command("overview")
+  .description("fetch citations per document per year for each author, for every citation filter variant")
+  .option("-i, --ids <file>", "file with Scopus author IDs (txt or CSV with Auth-ID)")
+  .option("--seed <file>", "seed file with Scopus author IDs")
+  .option("--from-profiles", "use IDs already cached in data/raw/author-profiles")
+  .option("-f, --force", "refetch even when a cached file exists")
+  .option("-n, --limit <number>", "process at most N IDs", integer)
+  .option("--year-start <year>", "first citation year (default 1996)", integer)
+  .option("--year-end <year>", "last citation year (default current year + 1)", integer)
+  .option("--variants <list>", "comma list: all,excl-self-selected,excl-self-all,excl-book (default all of them)")
+  .option("--no-launch", "attach to a running Chrome instead of launching one")
+  .option("--headless", "launch Chrome headless (session must already be logged in)")
+  .action(async (options) => {
+    await runCitationOverview(options);
+  });
+
 const journals = program.command("journals").description("journal metrics and CiteScore collection");
 journals
   .command("fetch")
@@ -164,9 +186,10 @@ journals
 program
   .command("format-data")
   .description("build JSON and CSV outputs from cached raw JSON")
-  .argument("[target]", "all | authors | journals", "all")
+  .argument("[target]", "all | authors | journals | citations", "all")
   .action(async (target: string) => {
     if (target === "authors") return runFormatAuthors();
+    if (target === "citations") return runFormatCitations();
     if (target === "journals") return runFormatJournals();
     if (target === "all") return runFormatAll();
     throw new Error(`unknown format-data target: ${target}`);

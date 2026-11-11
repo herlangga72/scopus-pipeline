@@ -23,6 +23,7 @@ export const config = {
     rawAuthorProfiles: resolve(dataDir, "raw/author-profiles"),
     rawAuthorDocuments: resolve(dataDir, "raw/author-documents"),
     rawJournals: resolve(dataDir, "raw/journals"),
+    rawCitationOverview: resolve(dataDir, "raw/citation-overview"),
     outDir: resolve(dataDir, "out"),
   },
   scopus: {
@@ -35,6 +36,9 @@ export const config = {
     requestDelayMs: num("SCOPUS_REQUEST_DELAY_MS", 400),
     journalDelayMs: num("SCOPUS_JOURNAL_DELAY_MS", 300),
     documentWaitMs: num("SCOPUS_DOCUMENT_WAIT_MS", 120_000),
+    citationYearStart: num("SCOPUS_CITATION_YEAR_START", 1996),
+    citationYearEnd: num("SCOPUS_CITATION_YEAR_END", new Date().getFullYear() + 1),
+    citationPageSize: num("SCOPUS_CITATION_PAGE_SIZE", 200),
   },
   cdp: {
     port: num("SCOPUS_CDP_PORT", 9222),

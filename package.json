@@ -17,9 +17,11 @@
     "authors:documents": "bun run src/cli.ts authors documents",
     "authors:all": "bun run src/cli.ts authors all",
     "journals:fetch": "bun run src/cli.ts journals fetch",
+    "citations:overview": "bun run src/cli.ts citations overview",
     "format-data": "bun run src/cli.ts format-data",
     "format-data:authors": "bun run src/cli.ts format-data authors",
     "format-data:journals": "bun run src/cli.ts format-data journals",
+    "format-data:citations": "bun run src/cli.ts format-data citations",
     "report": "bun run src/cli.ts report affiliations",
     "check": "tsc --noEmit",
     "test": "bun test"

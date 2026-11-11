@@ -23,7 +23,7 @@ export type AuthorCommandOptions = {
   headless?: boolean;
 };
 
-async function resolveAuthorIds(options: AuthorCommandOptions): Promise<string[]> {
+export async function resolveAuthorIds(options: AuthorCommandOptions): Promise<string[]> {
   const seedPath = options.ids ?? options.seed;
   if (seedPath) {
     return readIds(seedPath);
@@ -34,7 +34,7 @@ async function resolveAuthorIds(options: AuthorCommandOptions): Promise<string[]
   return readIds(config.paths.seedAuthorIds);
 }
 
-function applyLimit(ids: string[], limit?: number): string[] {
+export function applyLimit(ids: string[], limit?: number): string[] {
   return limit && limit > 0 ? ids.slice(0, limit) : ids;
 }
 

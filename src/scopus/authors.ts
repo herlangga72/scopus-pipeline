@@ -9,7 +9,7 @@ export class ScopusAuthError extends Error {
 
 const SCOPUS_ORIGIN = "https://www.scopus.com";
 
-export async function ensureScopusPage(page: Page): Promise<void> {
+export async function ensureScopusPage(page: Pick<Page, "url" | "navigate">): Promise<void> {
   const current = await page.url();
   if (!current.startsWith(SCOPUS_ORIGIN)) {
     await page.navigate(`${SCOPUS_ORIGIN}/`);
